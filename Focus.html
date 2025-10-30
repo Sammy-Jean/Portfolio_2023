@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JU Focus Dashboard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    />
+    <style>
+      body {
+        background: linear-gradient(135deg, #f7f9fa, #e8eef0);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        color: #1d2b2b;
+        margin: 0;
+        padding-bottom: 200px;
+        transition: background 0.3s, color 0.3s;
+      }
+      input[type="checkbox"].form-check-input {
+        width: 18px;
+        height: 18px;
+        border: 2px solid #004b4b; 
+        accent-color: #004b4b; 
+        cursor: pointer;
+      }
+      h1 {
+        font-weight: 700;
+        margin-top: 20px;
+        text-align: center;
+        color: #004b4b;
+      }
+      small {
+        display: block;
+        text-align: center;
+        color: #555;
+        margin-bottom: 15px;
+        transition: color 0.3s;
+      }
+     
+      .dashboard {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 2rem auto;
+  max-width: 1600px;
+  padding: 1rem;
+}
+      .card-box {
+        background: white;
+        border-radius: 20px;
+        padding: 1.5rem;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease, background 0.3s;
+      }
+      .card-box:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      }
+      #timer-wrapper {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        margin: 0 auto;
+      }
+      #timer-ring {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: conic-gradient(#004b4b var(--angle, 360deg), transparent 0);
+        -webkit-mask: radial-gradient(
+          farthest-side,
+          transparent calc(100% - 15px),
+          black 0
+        );
+        mask: radial-gradient(
+          farthest-side,
+          transparent calc(100% - 15px),
+          black 0
+        );
+        transition: background 0.5s linear;
+      }
+      #timer-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+      }
+      #timer-text {
+        font-size: 2em;
+        font-weight: 600;
+        color: #004b4b;
+        transition: color 0.3s;
+      }
+      .music-option {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f1f3f4;
+        border-radius: 10px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .music-option:hover {
+        background: #e2e7e9;
+      }
+      .music-option.active {
+        background: #d7ecec;
+        border: 2px solid #004b4b;
+      }
+      .delete-btn {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+      }
+      .delete-btn:hover {
+        color: #b02a37;
+      }
+      .dark-mode {
+        background: #121212 !important;
+        color: #eee !important;
+      }
+      .dark-mode .card-box {
+        background: #1e1e1e;
+        color: #eee;
+      }
+      .dark-mode #timer-ring {
+        background: conic-gradient(#4caf50 var(--angle, 360deg), transparent 0);
+      }
+      .dark-mode #timer-text {
+        color: #4caf50;
+      }
+      .dark-mode .music-option {
+        background: #2c2c2c;
+        color: #fff;
+      }
+      .dark-mode .music-option.active {
+        background: #3a3a3a;
+        border: 2px solid #4caf50;
+      }
+      .dark-mode small {
+        color: #bbb;
+      }
+      #darkToggle {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 100;
+      }
+      .flash-red {
+        animation: flashRed 1s ease-in-out infinite;
+      }
+      @keyframes flashRed {
+        0%,
+        100% {
+          color: #004b4b;
+        }
+        50% {
+          color: red;
+        }
+      }
+      .clear-data {
+        text-align: center;
+      }
+
+      @media (max-width: 1200px) {
+  .dashboard {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+    </style>
+  </head>
+  <body>
+    <button id="darkToggle" class="btn btn-outline-secondary btn-sm">🌙</button>
+
+    <h1>Focus Dashboard</h1>
+    <small>⚠️ Tasks are saved automatically!</small>
+
+    <div class="dashboard-wrapper" style="padding-bottom: 100px">
+      <div class="dashboard">
+        <!-- Pomodoro Card -->
+        <div class="card-box text-center">
+          <h4 class="fw-semibold text-success mb-3" id="mode">
+            🍅 Pomodoro Timer
+          </h4>
+          <div id="timer-wrapper">
+            <div id="timer-ring"></div>
+            <div id="timer-center"><div id="timer-text">25:00</div></div>
+          </div>
+          <div class="d-flex justify-content-center flex-wrap gap-2 mt-3">
+            <button id="start" class="btn btn-success btn-sm px-4">
+              Start
+            </button>
+            <button id="pause" class="btn btn-outline-success btn-sm px-4">
+              Pause
+            </button>
+            <button id="reset" class="btn btn-outline-secondary btn-sm px-4">
+              Reset
+            </button>
+          </div>
+          <div class="d-flex justify-content-center flex-wrap gap-2 mt-4">
+            <button id="pomodoroBtn" class="btn btn-primary btn-sm">
+              Pomodoro (25m)
+            </button>
+            <button id="shortBreak" class="btn btn-info btn-sm text-white">
+              Short (5m)
+            </button>
+            <button id="longBreak" class="btn btn-success btn-sm">
+              Long (15m)
+            </button>
+          </div>
+        </div>
+
+        <!-- Task Card -->
+        <div class="card-box">
+          <h4 class="fw-semibold text-success mb-3">✅ Tasks</h4>
+          <div class="input-group mb-3">
+            <input
+              id="newTask"
+              type="text"
+              class="form-control"
+              placeholder="Add a task..."
+            />
+            <button id="addTask" class="btn btn-success">Add</button>
+          </div>
+          <ul id="taskList" class="list-group"></ul>
+        </div>
+
+        <!-- Music Card -->
+        <div class="card-box">
+          <h4 class="fw-semibold text-success mb-3">🎵 Focus Music</h4>
+          <div class="music-controls" id="musicOptions">
+            <div
+              class="music-option"
+              data-src="https://s3.us-east-1.wasabisys.com/phinsight-storage/Music/Lofi%20Beat.mp3"
+            >
+              <span>☕ Lofi Beats</span> <i>🎧</i>
+            </div>
+            <div
+              class="music-option"
+              data-src="https://s3.us-east-1.wasabisys.com/phinsight-storage/Music/Rain%20Lofi.wav"
+            >
+              <span>🌧️ Rain Ambience</span> <i>💧</i>
+            </div>
+            <div
+              class="music-option"
+              data-src="https://s3.us-east-1.wasabisys.com/phinsight-storage/Music/dreamy-jazz_main-full.wav"
+            >
+              <span>🎷 Smooth Jazz</span> <i>🎶</i>
+            </div>
+            <div
+              class="music-option"
+              data-src="https://s3.us-east-1.wasabisys.com/phinsight-storage/Music/For%20Travel.wav"
+            >
+              <span>🌴 Summer Vibes</span> <i>☀️</i>
+            </div>
+            <div
+              class="music-option"
+              data-src="https://s3.us-east-1.wasabisys.com/phinsight-storage/Music/Alphorn%20Mountain%20Meditation%20(wave).wav"
+            >
+              <span>🍃 Nature Sounds</span> <i>🌿</i>
+            </div>
+          </div>
+          <audio
+            id="musicPlayer"
+            controls
+            class="w-100 mt-3 rounded"
+            loop
+          ></audio>
+        </div>
+
+        <!-- Progress Tracker Card -->
+        <div class="card-box">
+          <h4 class="fw-semibold text-success mb-3">📊 Progress Tracker</h4>
+          <ul class="list-group">
+            <li
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              Pomodoro Sessions Completed
+              <span id="pomodoroCount">0</span>
+            </li>
+            <li
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              Short Breaks Taken
+              <span id="shortBreakCount">0</span>
+            </li>
+            <li
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              Long Breaks Taken
+              <span id="longBreakCount">0</span>
+            </li>
+            <li
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              Tasks Completed
+              <span id="tasksCompleted">0</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="clear-data">
+        <button id="resetAll" class="btn btn-danger btn-sm mt-3">
+          Reset All Data
+        </button>
+      </div>
+    </div>
+
+    <audio id="alarm"></audio>
+
+    <script>
+      // ------------------ Dark Mode ------------------
+      const darkToggle = document.getElementById("darkToggle");
+      darkToggle.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+      });
+
+      // ------------------ Timer ------------------
+      const alarm = new Audio(
+        "https://s3.us-east-1.wasabisys.com/phinsight-storage/Music/WatchAlarmHighBeep%20PE190601%202.wav"
+      );
+      alarm.loop = false;
+
+      let totalTime = 25 * 60,
+        timeLeft = totalTime,
+        interval = null,
+        running = false,
+        mode = "work";
+      const timerText = document.getElementById("timer-text");
+      const timerRing = document.getElementById("timer-ring");
+      const modeEl = document.getElementById("mode");
+
+      function formatTime(s) {
+        const m = Math.floor(s / 60),
+          sec = s % 60;
+        return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+      }
+      function updateRing() {
+        timerRing.style.setProperty(
+          "--angle",
+          `${(timeLeft / totalTime) * 360}deg`
+        );
+      }
+      function flashZero() {
+        timerText.textContent = "00:00";
+        let flashCount = 0;
+        const flashInterval = setInterval(() => {
+          timerText.style.color =
+            timerText.style.color === "red" ? "#004b4b" : "red";
+          flashCount++;
+          if (flashCount >= 24) {
+            clearInterval(flashInterval);
+            timerText.style.color = "#004b4b";
+            timeLeft = totalTime;
+            timerText.textContent = formatTime(timeLeft);
+            updateRing();
+          }
+        }, 500);
+      }
+      function tick() {
+        if (timeLeft > 0) {
+          timeLeft--;
+          timerText.textContent = formatTime(timeLeft);
+          updateRing();
+        } else {
+          clearInterval(interval);
+          running = false;
+          alarm.play();
+          flashZero();
+        }
+      }
+
+      document.getElementById("start").addEventListener("click", () => {
+        if (!running) {
+          interval = setInterval(tick, 1000);
+          running = true;
+        }
+      });
+      document.getElementById("pause").addEventListener("click", () => {
+        clearInterval(interval);
+        running = false;
+      });
+      document.getElementById("reset").addEventListener("click", () => {
+        clearInterval(interval);
+        timeLeft = totalTime;
+        timerText.textContent = formatTime(timeLeft);
+        updateRing();
+        running = false;
+      });
+
+      document.getElementById("pomodoroBtn").addEventListener("click", () => {
+        totalTime = 25 * 60;
+        timeLeft = totalTime;
+        modeEl.textContent = "🍅 Pomodoro Timer";
+        timerText.textContent = formatTime(timeLeft);
+        updateRing();
+      });
+      document.getElementById("shortBreak").addEventListener("click", () => {
+        totalTime = .1 * 60;
+        timeLeft = totalTime;
+        modeEl.textContent = "☕ Short Break";
+        timerText.textContent = formatTime(timeLeft);
+        updateRing();
+      });
+      document.getElementById("longBreak").addEventListener("click", () => {
+        totalTime = 15 * 60;
+        timeLeft = totalTime;
+        modeEl.textContent = "🌴 Long Break";
+        timerText.textContent = formatTime(timeLeft);
+        updateRing();
+      });
+
+      // ------------------ Task List with LocalStorage ------------------
+      const taskInput = document.getElementById("newTask");
+      const addTaskBtn = document.getElementById("addTask");
+      const taskList = document.getElementById("taskList");
+
+      function saveTasks() {
+        const tasks = [];
+        taskList.querySelectorAll("li").forEach((li) => {
+          const text = li.querySelector("span").textContent;
+          const done = li.querySelector("input").checked;
+          tasks.push({ text, done });
+        });
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+      }
+
+      function createTaskItem(task) {
+        const li = document.createElement("li");
+        li.className =
+          "list-group-item d-flex justify-content-between align-items-center";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "form-check-input me-2";
+        checkbox.checked = task.done;
+        const span = document.createElement("span");
+        span.textContent = task.text;
+        if (task.done) {
+          span.style.textDecoration = "line-through";
+          span.style.color = "#888";
+        }
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) {
+            span.style.textDecoration = "line-through";
+            span.style.color = "#888";
+          } else {
+            span.style.textDecoration = "none";
+            span.style.color = "";
+          }
+          saveTasks();
+        });
+        const delBtn = document.createElement("button");
+        delBtn.className = "delete-btn";
+        delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+        delBtn.onclick = () => {
+          li.remove();
+          saveTasks();
+        };
+        const leftDiv = document.createElement("div");
+        leftDiv.className = "d-flex align-items-center";
+        leftDiv.appendChild(checkbox);
+        leftDiv.appendChild(span);
+        li.appendChild(leftDiv);
+        li.appendChild(delBtn);
+        return li;
+      }
+
+      function loadTasks() {
+        const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+        tasks.forEach((t) => taskList.appendChild(createTaskItem(t)));
+      }
+
+      addTaskBtn.addEventListener("click", () => {
+        const text = taskInput.value.trim();
+        if (!text) return;
+        taskList.appendChild(createTaskItem({ text, done: false }));
+        taskInput.value = "";
+        saveTasks();
+      });
+      taskInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") addTaskBtn.click();
+      });
+      loadTasks();
+
+      // ----------- Progress Tracker -----------
+      const pomodoroCountEl = document.getElementById("pomodoroCount");
+      const shortBreakCountEl = document.getElementById("shortBreakCount");
+      const longBreakCountEl = document.getElementById("longBreakCount");
+      const tasksCompletedEl = document.getElementById("tasksCompleted");
+
+      // Load progress from localStorage or start at 0
+      let progress = JSON.parse(
+        localStorage.getItem("progress") ||
+          '{"pomodoro":0,"shortBreak":0,"longBreak":0,"tasks":0}'
+      );
+
+      function saveProgress() {
+        localStorage.setItem("progress", JSON.stringify(progress));
+      }
+      function updateProgressUI() {
+        pomodoroCountEl.textContent = progress.pomodoro;
+        shortBreakCountEl.textContent = progress.shortBreak;
+        longBreakCountEl.textContent = progress.longBreak;
+        tasksCompletedEl.textContent = progress.tasks;
+      }
+      updateProgressUI();
+
+      // Increment Pomodoro sessions when a Pomodoro ends
+      function tick() {
+        if (timeLeft > 0) {
+          timeLeft--;
+          timerText.textContent = formatTime(timeLeft);
+          updateRing();
+        } else {
+          clearInterval(interval);
+          running = false;
+          alarm.play();
+          flashZero();
+
+          if (modeEl.textContent.includes("Pomodoro")) {
+            progress.pomodoro++;
+          } else if (modeEl.textContent.includes("Short Break")) {
+            progress.shortBreak++;
+          } else if (modeEl.textContent.includes("Long Break")) {
+            progress.longBreak++;
+          }
+          saveProgress();
+          updateProgressUI();
+        }
+      }
+
+      // Track completed tasks
+      function saveTasks() {
+        const tasks = [];
+        let completedTasks = 0;
+        taskList.querySelectorAll("li").forEach((li) => {
+          const text = li.querySelector("span").textContent;
+          const done = li.querySelector("input").checked;
+          if (done) completedTasks++;
+          tasks.push({ text, done });
+        });
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+        progress.tasks = completedTasks;
+        saveProgress();
+        updateProgressUI();
+      }
+
+      // Clear local stoarage
+      document.getElementById("resetAll").addEventListener("click", () => {
+        if (
+          confirm(
+            "Are you sure you want to reset all tasks and progress? This cannot be undone."
+          )
+        ) {
+          // Clear localStorage
+          localStorage.removeItem("tasks");
+          localStorage.removeItem("progress");
+
+          // Reset UI
+          taskList.innerHTML = "";
+          progress = { pomodoro: 0, shortBreak: 0, longBreak: 0, tasks: 0 };
+          updateProgressUI();
+
+          // Reset timer to default
+          totalTime = 25 * 60;
+          timeLeft = totalTime;
+          timerText.textContent = formatTime(timeLeft);
+          updateRing();
+        }
+      });
+
+      // ------------------ Music ------------------
+      const musicOptions = document.querySelectorAll(".music-option");
+      const musicPlayer = document.getElementById("musicPlayer");
+      musicOptions.forEach((opt) => {
+        opt.addEventListener("click", () => {
+          musicOptions.forEach((o) => o.classList.remove("active"));
+          opt.classList.add("active");
+          musicPlayer.src = opt.getAttribute("data-src");
+          musicPlayer.play();
+        });
+      });
+    </script>
+  </body>
+</html>
