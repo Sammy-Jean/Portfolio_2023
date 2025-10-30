@@ -419,7 +419,7 @@
         updateRing();
       });
       document.getElementById("shortBreak").addEventListener("click", () => {
-        totalTime = .1 * 60;
+        totalTime = 5 * 60;
         timeLeft = totalTime;
         modeEl.textContent = "☕ Short Break";
         timerText.textContent = formatTime(timeLeft);
