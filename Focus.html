@@ -1877,366 +1877,302 @@
  
     <audio id="alarm"></audio>
  
-    <script>
-      // ------------------ Dark Mode ------------------
-      const darkToggle = document.getElementById("darkToggle");
-      darkToggle.addEventListener("click", () => {
-        document.body.classList.toggle("dark-mode");
-      });
- 
-      // ------------------ Timer ------------------
-      const alarm = new Audio(
-        "https://s3.us-east-1.wasabisys.com/phinsight-storage/Music/WatchAlarmHighBeep%20PE190601%202.wav"
-      );
-      alarm.loop = false;
- 
-      let totalTime = 25 * 60,
-        timeLeft = totalTime,
-        interval = null,
-        running = false,
-        mode = "work";
-      const timerText = document.getElementById("timer-text");
-      const timerRing = document.getElementById("timer-ring");
-      const modeEl = document.getElementById("mode");
- 
-      function formatTime(s) {
-        const m = Math.floor(s / 60),
-          sec = s % 60;
-        return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-      }
-      function updateRing() {
-        timerRing.style.setProperty(
-          "--angle",
-          `${(timeLeft / totalTime) * 360}deg`
-        );
-      }
-      function flashZero() {
-        timerText.textContent = "00:00";
-        let flashCount = 0;
-        const flashInterval = setInterval(() => {
-          timerText.style.color =
-            timerText.style.color === "red" ? "#004b4b" : "red";
-          flashCount++;
-          if (flashCount >= 24) {
-            clearInterval(flashInterval);
-            timerText.style.color = "#004b4b";
-            timeLeft = totalTime;
-            timerText.textContent = formatTime(timeLeft);
-            updateRing();
-          }
-        }, 500);
-      }
-      function tick() {
-        if (timeLeft > 0) {
-          timeLeft--;
-          timerText.textContent = formatTime(timeLeft);
-          updateRing();
-        } else {
-          clearInterval(interval);
-          running = false;
-          alarm.play();
-          flashZero();
-        }
-      }
- 
-      document.getElementById("start").addEventListener("click", () => {
-        if (!running) {
-          interval = setInterval(tick, 1000);
-          running = true;
-        }
-      });
-      document.getElementById("pause").addEventListener("click", () => {
-        clearInterval(interval);
-        running = false;
-      });
-      document.getElementById("reset").addEventListener("click", () => {
-        clearInterval(interval);
-        timeLeft = totalTime;
-        timerText.textContent = formatTime(timeLeft);
-        updateRing();
-        running = false;
-      });
- 
-      document.getElementById("pomodoroBtn").addEventListener("click", () => {
-        totalTime = 25 * 60;
-        timeLeft = totalTime;
-        modeEl.textContent = "🍅 Pomodoro Timer";
-        timerText.textContent = formatTime(timeLeft);
-        updateRing();
-      });
-      document.getElementById("shortBreak").addEventListener("click", () => {
-        totalTime = .1 * 60;
-        timeLeft = totalTime;
-        modeEl.textContent = "☕ Short Break";
-        timerText.textContent = formatTime(timeLeft);
-        updateRing();
-      });
-      document.getElementById("longBreak").addEventListener("click", () => {
-        totalTime = 15 * 60;
-        timeLeft = totalTime;
-        modeEl.textContent = "🌴 Long Break";
-        timerText.textContent = formatTime(timeLeft);
-        updateRing();
-      });
- 
-      // ------------------ Task List with LocalStorage ------------------
-      const taskInput = document.getElementById("newTask");
-      const addTaskBtn = document.getElementById("addTask");
-      const taskList = document.getElementById("taskList");
- 
-      function saveTasks() {
-        const tasks = [];
-        taskList.querySelectorAll("li").forEach((li) => {
-          const text = li.querySelector("span").textContent;
-          const done = li.querySelector("input").checked;
-          tasks.push({ text, done });
-        });
-        localStorage.setItem("tasks", JSON.stringify(tasks));
-      }
- 
-      function createTaskItem(task) {
-        const li = document.createElement("li");
-        li.className =
-          "list-group-item d-flex justify-content-between align-items-center";
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.className = "form-check-input me-2";
-        checkbox.checked = task.done;
-        const span = document.createElement("span");
-        span.textContent = task.text;
-        if (task.done) {
-          span.style.textDecoration = "line-through";
-          span.style.color = "#888";
-        }
-        checkbox.addEventListener("change", () => {
-          if (checkbox.checked) {
-            span.style.textDecoration = "line-through";
-            span.style.color = "#888";
-          } else {
-            span.style.textDecoration = "none";
-            span.style.color = "";
-          }
-          saveTasks();
-        });
-        const delBtn = document.createElement("button");
-        delBtn.className = "delete-btn";
-        delBtn.innerHTML = '<i class="bi bi-trash"></i>';
-        delBtn.onclick = () => {
-          li.remove();
-          saveTasks();
-        };
-        const leftDiv = document.createElement("div");
-        leftDiv.className = "d-flex align-items-center";
-        leftDiv.appendChild(checkbox);
-        leftDiv.appendChild(span);
-        li.appendChild(leftDiv);
-        li.appendChild(delBtn);
-        return li;
-      }
- 
-      function loadTasks() {
-        const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-        tasks.forEach((t) => taskList.appendChild(createTaskItem(t)));
-      }
- 
-      addTaskBtn.addEventListener("click", () => {
-        const text = taskInput.value.trim();
-        if (!text) return;
-        taskList.appendChild(createTaskItem({ text, done: false }));
-        taskInput.value = "";
-        saveTasks();
-      });
-      taskInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") addTaskBtn.click();
-      });
-      loadTasks();
- 
-      // ----------- Progress Tracker -----------
-      const pomodoroCountEl = document.getElementById("pomodoroCount");
-      const shortBreakCountEl = document.getElementById("shortBreakCount");
-      const longBreakCountEl = document.getElementById("longBreakCount");
-      const tasksCompletedEl = document.getElementById("tasksCompleted");
- 
-      // Load progress from localStorage or start at 0
-      let progress = JSON.parse(
-        localStorage.getItem("progress") ||
-          '{"pomodoro":0,"shortBreak":0,"longBreak":0,"tasks":0}'
-      );
- 
-      function saveProgress() {
-        localStorage.setItem("progress", JSON.stringify(progress));
-      }
-      function updateProgressUI() {
-        pomodoroCountEl.textContent = progress.pomodoro;
-        shortBreakCountEl.textContent = progress.shortBreak;
-        longBreakCountEl.textContent = progress.longBreak;
-        tasksCompletedEl.textContent = progress.tasks;
-      }
-      updateProgressUI();
- 
-      // Increment Pomodoro sessions when a Pomodoro ends
-      function tick() {
-        if (timeLeft > 0) {
-          timeLeft--;
-          timerText.textContent = formatTime(timeLeft);
-          updateRing();
-        } else {
-          clearInterval(interval);
-          running = false;
-          alarm.play();
-          flashZero();
- 
-          if (modeEl.textContent.includes("Pomodoro")) {
-            progress.pomodoro++;
-          } else if (modeEl.textContent.includes("Short Break")) {
-            progress.shortBreak++;
-          } else if (modeEl.textContent.includes("Long Break")) {
-            progress.longBreak++;
-          }
-          saveProgress();
-          updateProgressUI();
-        }
-      }
- 
-      // Track completed tasks
-      function saveTasks() {
-        const tasks = [];
-        let completedTasks = 0;
-        taskList.querySelectorAll("li").forEach((li) => {
-          const text = li.querySelector("span").textContent;
-          const done = li.querySelector("input").checked;
-          if (done) completedTasks++;
-          tasks.push({ text, done });
-        });
-        localStorage.setItem("tasks", JSON.stringify(tasks));
-        progress.tasks = completedTasks;
-        saveProgress();
-        updateProgressUI();
-      }
- 
-      // Clear local storage
-      document.getElementById("resetAll").addEventListener("click", () => {
-        if (
-          confirm(
-            "Are you sure you want to reset all tasks and progress? This cannot be undone."
-          )
-        ) {
-          // Clear localStorage
-          localStorage.removeItem("tasks");
-          localStorage.removeItem("progress");
- 
-          // Reset UI
-          taskList.innerHTML = "";
-          progress = { pomodoro: 0, shortBreak: 0, longBreak: 0, tasks: 0 };
-          updateProgressUI();
- 
-          // Reset timer to default
-          totalTime = 25 * 60;
-          timeLeft = totalTime;
-          timerText.textContent = formatTime(timeLeft);
-          updateRing();
-        }
-      });
- 
-      // ------------------ Music ------------------
-      const musicOptions = document.querySelectorAll(".music-option");
-      const musicPlayer = document.getElementById("musicPlayer");
-      musicOptions.forEach((opt) => {
-        opt.addEventListener("click", () => {
-          musicOptions.forEach((o) => o.classList.remove("active"));
-          opt.classList.add("active");
-          musicPlayer.src = opt.getAttribute("data-src");
-          musicPlayer.play();
-        });
-      });
- 
-      // ------------------ Prevent Screen Sleep ------------------
+  <script >
+    // ------------------ Dark Mode ------------------
+    const darkToggle = document.getElementById("darkToggle");
+darkToggle.addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+});
+
+// ------------------ Timer ------------------
+const alarm = new Audio("https://s3.us-east-1.wasabisys.com/phinsight-storage/Music/WatchAlarmHighBeep%20PE190601%202.wav");
+alarm.loop = false;
+
+let totalTime = 25 * 60;
+let timeLeft = totalTime;
+let interval = null;
+let running = false;
+
+const timerText = document.getElementById("timer-text");
+const timerRing = document.getElementById("timer-ring");
+const modeEl = document.getElementById("mode");
+
+function formatTime(s) {
+    const m = Math.floor(s / 60),
+        sec = s % 60;
+    return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
+function updateRing() {
+    timerRing.style.setProperty("--angle", `${(timeLeft / totalTime) * 360}deg`);
+}
+
+function flashZero() {
+    timerText.textContent = "00:00";
+    let flashCount = 0;
+    const flashInterval = setInterval(() => {
+        timerText.style.color = timerText.style.color === "red" ? "#004b4b" : "red";
+        flashCount++;
+        if (flashCount >= 24) {
+            clearInterval(flashInterval);
+            timerText.style.color = "#004b4b";
+            timeLeft = totalTime;
+            timerText.textContent = formatTime(timeLeft);
+            updateRing();
+        }
+    }, 500);
+}
+
+// ------------------ Progress Tracker ------------------
+const pomodoroCountEl = document.getElementById("pomodoroCount");
+const shortBreakCountEl = document.getElementById("shortBreakCount");
+const longBreakCountEl = document.getElementById("longBreakCount");
+const tasksCompletedEl = document.getElementById("tasksCompleted");
+
+let progress = JSON.parse(localStorage.getItem("progress") || '{"pomodoro":0,"shortBreak":0,"longBreak":0,"tasks":0}');
+
+function saveProgress() {
+    localStorage.setItem("progress", JSON.stringify(progress));
+}
+
+function updateProgressUI() {
+    pomodoroCountEl.textContent = progress.pomodoro;
+    shortBreakCountEl.textContent = progress.shortBreak;
+    longBreakCountEl.textContent = progress.longBreak;
+    tasksCompletedEl.textContent = progress.tasks;
+}
+updateProgressUI();
+
+// ------------------ Task List ------------------
+const taskInput = document.getElementById("newTask");
+const addTaskBtn = document.getElementById("addTask");
+const taskList = document.getElementById("taskList");
+
+function saveTasks() {
+    const tasks = [];
+    let completedTasks = 0;
+    taskList.querySelectorAll("li").forEach(li => {
+        const text = li.querySelector("span").textContent;
+        const done = li.querySelector("input").checked;
+        if (done) completedTasks++;
+        tasks.push({
+            text,
+            done
+        });
+    });
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    progress.tasks = completedTasks;
+    saveProgress();
+    updateProgressUI();
+}
+
+function createTaskItem(task) {
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-center";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "form-check-input me-2";
+    checkbox.checked = task.done;
+
+    const span = document.createElement("span");
+    span.textContent = task.text;
+    if (task.done) {
+        span.style.textDecoration = "line-through";
+        span.style.color = "#888";
+    }
+
+    checkbox.addEventListener("change", () => {
+        if (checkbox.checked) {
+            span.style.textDecoration = "line-through";
+            span.style.color = "#888";
+        } else {
+            span.style.textDecoration = "none";
+            span.style.color = "";
+        }
+        saveTasks();
+    });
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "delete-btn";
+    delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+    delBtn.onclick = () => {
+        li.remove();
+        saveTasks();
+    };
+
+    const leftDiv = document.createElement("div");
+    leftDiv.className = "d-flex align-items-center";
+    leftDiv.appendChild(checkbox);
+    leftDiv.appendChild(span);
+    li.appendChild(leftDiv);
+    li.appendChild(delBtn);
+    return li;
+}
+
+function loadTasks() {
+    const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+    tasks.forEach(t => taskList.appendChild(createTaskItem(t)));
+}
+loadTasks();
+
+addTaskBtn.addEventListener("click", () => {
+    const text = taskInput.value.trim();
+    if (!text) return;
+    taskList.appendChild(createTaskItem({
+        text,
+        done: false
+    }));
+    taskInput.value = "";
+    saveTasks();
+});
+taskInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") addTaskBtn.click();
+});
+
+// ------------------ Timer Logic ------------------
+function tick() {
+    if (timeLeft > 0) {
+        timeLeft--;
+        timerText.textContent = formatTime(timeLeft);
+        updateRing();
+    } else {
+        clearInterval(interval);
+        running = false;
+
+        // Stop background music
+        if (!musicPlayer.paused) {
+            musicPlayer.pause();
+            musicPlayer.currentTime = 0;
+        }
+
+        // Play alarm
+        alarm.currentTime = 0;
+        alarm.play().catch(err => console.warn("Alarm playback blocked:", err));
+
+        flashZero();
+
+        // Update progress
+        if (modeEl.textContent.includes("Pomodoro")) progress.pomodoro++;
+        else if (modeEl.textContent.includes("Short Break")) progress.shortBreak++;
+        else if (modeEl.textContent.includes("Long Break")) progress.longBreak++;
+
+        saveProgress();
+        updateProgressUI();
+    }
+}
+
+document.getElementById("start").addEventListener("click", () => {
+    if (!running) {
+        interval = setInterval(tick, 1000);
+        running = true;
+    }
+});
+
+document.getElementById("pause").addEventListener("click", () => {
+    clearInterval(interval);
+    running = false;
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+    clearInterval(interval);
+    timeLeft = totalTime;
+    timerText.textContent = formatTime(timeLeft);
+    updateRing();
+    running = false;
+});
+
+document.getElementById("pomodoroBtn").addEventListener("click", () => {
+    totalTime = 25 * 60;
+    timeLeft = totalTime;
+    modeEl.textContent = "🍅 Pomodoro Timer";
+    timerText.textContent = formatTime(timeLeft);
+    updateRing();
+});
+
+document.getElementById("shortBreak").addEventListener("click", () => {
+    totalTime = 5 * 60;
+    timeLeft = totalTime;
+    modeEl.textContent = "☕ Short Break";
+    timerText.textContent = formatTime(timeLeft);
+    updateRing();
+});
+
+document.getElementById("longBreak").addEventListener("click", () => {
+    totalTime = 15 * 60;
+    timeLeft = totalTime;
+    modeEl.textContent = "🌴 Long Break";
+    timerText.textContent = formatTime(timeLeft);
+    updateRing();
+});
+
+// ------------------ Music ------------------
+const musicOptions = document.querySelectorAll(".music-option");
+const musicPlayer = document.getElementById("musicPlayer");
+musicOptions.forEach(opt => {
+    opt.addEventListener("click", () => {
+        musicOptions.forEach(o => o.classList.remove("active"));
+        opt.classList.add("active");
+        musicPlayer.src = opt.getAttribute("data-src");
+        musicPlayer.play();
+    });
+});
+
+// ------------------ Reset All ------------------
+document.getElementById("resetAll").addEventListener("click", () => {
+    if (confirm("Are you sure you want to reset all tasks and progress?")) {
+        localStorage.removeItem("tasks");
+        localStorage.removeItem("progress");
+        taskList.innerHTML = "";
+        progress = {
+            pomodoro: 0,
+            shortBreak: 0,
+            longBreak: 0,
+            tasks: 0
+        };
+        updateProgressUI();
+        totalTime = 25 * 60;
+        timeLeft = totalTime;
+        timerText.textContent = formatTime(timeLeft);
+        updateRing();
+    }
+});
+
+// ------------------ Prevent Screen Sleep ------------------
 let wakeLock = null;
 let wakeLockAudio = null;
- 
-// Request screen wake lock (for Android / Chrome)
+
 async function requestWakeLock() {
-  try {
-    if ('wakeLock' in navigator) {
-      wakeLock = await navigator.wakeLock.request('screen');
-      console.log('🔋 Wake Lock is active');
-      wakeLock.addEventListener('release', () => {
-        console.log('⚠️ Wake Lock released');
-      });
-    } else {
-      console.log('Wake Lock API not supported; using iOS fallback.');
-      iosWakeLockFallback();
-    }
-  } catch (err) {
-    console.error(`${err.name}, ${err.message}`);
-  }
+    try {
+        if ("wakeLock" in navigator) {
+            wakeLock = await navigator.wakeLock.request("screen");
+            console.log("🔋 Wake Lock is active");
+            wakeLock.addEventListener("release", () => console.log("⚠️ Wake Lock released"));
+        } else {
+            iosWakeLockFallback();
+        }
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
 }
- 
-// iOS Safari fallback using silent audio loop
+
 function iosWakeLockFallback() {
-  if (!wakeLockAudio) {
-    wakeLockAudio = new Audio(
-      "data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCA"
-    );
-    wakeLockAudio.loop = true;
-    wakeLockAudio.volume = 0.01; // very quiet
-  }
-  wakeLockAudio.play().then(() => {
-    console.log('🎧 iOS wake lock fallback active');
-  }).catch(err => console.warn('Audio wake lock failed:', err));
+    if (!wakeLockAudio) {
+        wakeLockAudio = new Audio("data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCA");
+        wakeLockAudio.loop = true;
+        wakeLockAudio.volume = 0.01;
+    }
+    wakeLockAudio.play().catch(err => console.warn("Audio wake lock failed:", err));
 }
- 
-// Re-request wake lock when tab becomes visible again
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    requestWakeLock();
-  } else if (wakeLockAudio) {
-    wakeLockAudio.pause(); // pause silent audio if hidden
-  }
+
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") requestWakeLock();
+    else if (wakeLockAudio) wakeLockAudio.pause();
 });
- 
-// Request wake lock on first user interaction
-document.addEventListener('click', () => {
-  requestWakeLock();
-}, { once: true });
- 
- 
-// ------------------ TIMER LOGIC FIX ------------------
-function tick() {
-  if (timeLeft > 0) {
-    timeLeft--;
-    timerText.textContent = formatTime(timeLeft);
-    updateRing();
-  } else {
-    clearInterval(interval);
-    running = false;
- 
-    // Stop background music
-    if (!musicPlayer.paused) {
-      musicPlayer.pause();
-      musicPlayer.currentTime = 0;
-    }
- 
-    // Play alarm sound
-    alarm.currentTime = 0;
-    alarm.play().catch(err => console.warn('Alarm playback blocked:', err));
- 
-    flashZero();
- 
-    // Update progress stats
-    if (modeEl.textContent.includes("Pomodoro")) {
-      progress.pomodoro++;
-    } else if (modeEl.textContent.includes("Short Break")) {
-      progress.shortBreak++;
-    } else if (modeEl.textContent.includes("Long Break")) {
-      progress.longBreak++;
-    }
-    saveProgress();
-    updateProgressUI();
-  }
-}
- 
-    </script>
+
+document.addEventListener("click", () => requestWakeLock(), {
+    once: true
+}); 
+</script>
   </body>
 </html>
 
